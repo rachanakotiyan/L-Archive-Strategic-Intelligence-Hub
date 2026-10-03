@@ -1,4 +1,4 @@
-# **L-Archive: Strategic Intelligence Hub 🚨**
+# **L-Archive: Strategic Intelligence Hub **
 
 **L-Archive** is an AI-driven spatiotemporal analytics and predictive policing platform built as a hackathon prototype. It transforms raw, static crime data into an interactive intelligence dashboard. By combining geospatial analysis, network theory, Natural Language Processing (NLP), and machine learning, this platform demonstrates how crime incidents can be analyzed from multiple angles to shift law enforcement strategies from *reactive* to *proactive*.
 

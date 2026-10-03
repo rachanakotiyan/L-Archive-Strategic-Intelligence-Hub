@@ -160,32 +160,43 @@ app.layout = html.Div(style={'fontFamily': 'Courier New, monospace', 'padding': 
 def update_risk_prediction(district, hour):
     if district is None:
         return "AWAITING SECTOR INPUT..."
-    
+
     try:
-        # Translate the district back into the number the AI understands
+        conn = sqlite3.connect('chicago_crime_analytics.db')
+        district_stats = pd.read_sql_query(
+            "SELECT AVG(latitude) AS avg_lat, AVG(longitude) AS avg_lon FROM crime_incidents WHERE district = ?",
+            conn,
+            params=(str(district),)
+        )
+        conn.close()
+
+        avg_lat = district_stats['avg_lat'].iloc[0]
+        avg_lon = district_stats['avg_lon'].iloc[0]
+
+        if pd.isna(avg_lat) or pd.isna(avg_lon):
+            return "NO HISTORICAL DATA FOR THIS DISTRICT."
+
+        # Match the exact columns used when the model was trained.
         encoded_district = le_district.transform([str(district)])[0]
-        
-        # We use today's month and day of week to make the prediction feel live
         current_month = datetime.now().month
         current_day = datetime.now().weekday()
-        
-        # Create a DataFrame with the exact column names the AI was trained on to fix the warning
-       # Inside your callback:
+
         input_data = pd.DataFrame(
-        [[avg_lat, avg_lon, hour, current_month, encoded_district]], 
-        columns=['latitude', 'longitude', 'hour', 'month', 'district_encoded']
+            [[hour, current_month, current_day, encoded_district]],
+            columns=['hour', 'month', 'day_of_week', 'district_encoded']
         )
-        
-        # Ask the Random Forest model for a prediction
+
         risk_probability = rf_model.predict_proba(input_data)[0][1]
         risk_percentage = round(risk_probability * 100, 2)
-        
-        # Change color based on severity (Death note theme colors)
+
         color = "#ffffff" if risk_percentage < 30 else "#e67e22" if risk_percentage < 60 else "#ff0000"
         status = "LOW PRIORITY" if risk_percentage < 30 else "ELEVATED RISK" if risk_percentage < 60 else "CRITICAL THREAT DETECTED"
-        
-        return html.Span(f"[{status}] PROBABILITY: {risk_percentage}%", style={'color': color, 'textShadow': f'0 0 10px {color}'})
-    
+
+        return html.Span(
+            f"[{status}] PROBABILITY: {risk_percentage}%",
+            style={'color': color, 'textShadow': f'0 0 10px {color}'}
+        )
+
     except Exception as e:
         return f"SYSTEM ERROR: {str(e)}"
 
